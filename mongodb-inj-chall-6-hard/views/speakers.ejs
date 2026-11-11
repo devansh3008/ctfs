@@ -1,0 +1,208 @@
+
+<%- include('partials/header') %>
+
+<div class="speakers-section">
+    <div class="container">
+        <h2>Our Distinguished Speakers</h2>
+        
+        <div class="search-container">
+            <input type="text" id="speakerSearch" placeholder="Search speakers...">
+            <button onclick="searchSpeakers()" class="btn-search">Search</button>
+        </div>
+
+        <div id="speakersGrid" class="speakers-grid">
+            <% if (speakers && speakers.length > 0) { %>
+                <% speakers.forEach(function(speaker) { %>
+                    <div class="speaker-card">
+                        <img src="<%= speaker.image || '/img/default-avatar.png' %>" alt="<%= speaker.name %>">
+                        <h3><%= speaker.name %></h3>
+                        <p class="title"><%= speaker.title %></p>
+                        <p class="company"><%= speaker.company %></p>
+                    </div>
+                <% }); %>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<script>
+async function searchSpeakers() {
+    const searchQuery = document.getElementById('speakerSearch').value;
+    const grid = document.getElementById('speakersGrid');
+    
+    try {
+        // Show loading state
+        grid.innerHTML = '<div class="loading">Searching...</div>';
+
+        // Construct the search query
+        const query = JSON.stringify({
+            "name": searchQuery
+        });
+        
+        const response = await fetch('/api/speakers/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ query })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Search failed');
+        }
+
+        const speakers = await response.json();
+        displaySpeakers(speakers);
+    } catch (err) {
+        console.error('Error:', err);
+        grid.innerHTML = '<div class="error">Search failed. Please try again.</div>';
+    }
+}
+
+function displaySpeakers(speakers) {
+    const grid = document.getElementById('speakersGrid');
+    
+    if (!speakers || speakers.length === 0) {
+        grid.innerHTML = '<div class="no-results">No speakers found</div>';
+        return;
+    }
+    
+    grid.innerHTML = speakers.map(speaker => `
+        <div class="speaker-card">
+            <img src="${speaker.image || '/img/default-avatar.png'}" alt="${speaker.name}">
+            <h3>${speaker.name}</h3>
+            <p class="title">${speaker.title || 'Speaker'}</p>
+            <p class="company">${speaker.company || ''}</p>
+            ${speaker.bio ? `<p class="bio">${speaker.bio}</p>` : ''}
+            ${speaker.presentations && speaker.presentations.length > 0 ? 
+                `<div class="presentations">
+                    <h4>Presentations:</h4>
+                    <ul>
+                        ${speaker.presentations.map(p => `<li>${p}</li>`).join('')}
+                    </ul>
+                </div>` : ''
+            }
+        </div>
+    `).join('');
+}
+
+// Initial load of speakers
+document.addEventListener('DOMContentLoaded', () => {
+    const initialSpeakers = document.querySelectorAll('.speaker-card');
+    if (initialSpeakers.length === 0) {
+        searchSpeakers();
+    }
+});
+</script>
+
+<style>
+.speakers-section {
+    padding: 2rem 0;
+}
+
+.search-container {
+    margin: 2rem 0;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+#speakerSearch {
+    padding: 0.5rem 1rem;
+    width: 300px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.btn-search {
+    padding: 0.5rem 1rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-search:hover {
+    background-color: #0056b3;
+}
+
+.speakers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 2rem;
+    padding: 1rem;
+}
+
+.speaker-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    transition: transform 0.2s;
+}
+
+.speaker-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.speaker-card img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 1rem;
+}
+
+.speaker-card h3 {
+    margin: 0.5rem 0;
+    color: #333;
+}
+
+.speaker-card .title {
+    color: #666;
+    font-style: italic;
+    margin: 0.25rem 0;
+}
+
+.speaker-card .company {
+    color: #888;
+    margin: 0.25rem 0;
+}
+
+.speaker-card .bio {
+    font-size: 0.9rem;
+    margin: 1rem 0;
+    color: #555;
+}
+
+.speaker-card .presentations {
+    margin-top: 1rem;
+    text-align: left;
+}
+
+.speaker-card .presentations ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.speaker-card .presentations li {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0.25rem 0;
+}
+
+.loading, .error, .no-results {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+}
+
+.error {
+    color: #dc3545;
+}
+</style>
+
+<%- include('partials/footer') %>

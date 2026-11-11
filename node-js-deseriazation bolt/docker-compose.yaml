@@ -1,0 +1,42 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - ctf_network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    expose:
+      - "3000"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=10M,noexec,nosuid,nodev
+    networks:
+      - ctf_network
+    restart: unless-stopped
+    ulimits:
+      nproc: 100
+      nofile:
+        soft: 1000
+        hard: 1000
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  ctf_network:
+    driver: bridge
